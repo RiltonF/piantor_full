@@ -1,4 +1,4 @@
-import board
+import board,os
 
 from kb import KMKKeyboard, isRight; keyboard = KMKKeyboard()
 from kmk.modules.split import Split, SplitSide, SplitType
@@ -23,7 +23,17 @@ if isRight:
     import busio as io
     from kmk.modules.layers import Layers as _Layers;
     i2c = io.I2C(scl=board.GP27, sda=board.GP26)
-    trackball = Trackball(i2c,angle_offset=90,)
+    trackball = Trackball(
+        i2c,
+        angle_offset=90,
+        handlers=[
+        # on layer 1 and above use the default pointing behavior
+        PointingHandler(),
+        # use ScrollDirection.NATURAL (default) or REVERSE to change the scrolling direction
+        ScrollHandler(scroll_direction=ScrollDirection.REVERSE),
+        # act like an encoder, input arrow keys
+        # KeyHandler(KC.UP, KC.RIGHT, KC.DOWN, KC.LEFT, KC.ENTER), 
+    ])
 
     keyboard.modules.append(trackball)
     trackball.set_red(100)
@@ -70,6 +80,10 @@ ADJUST = KC.SPC
 # ADJUST = KC.LT(3, KC.SPC)
 LGUI = KC.HT(KC.LALT, KC.LGUI,  prefer_hold=False) # mainly for alt tab, if held it's gui
 INS_PASTE = Sequence(KC.LSFT, KC.INSERT)
+CAD = KC.LCTL(KC.LALT(KC.DEL))
+TB_TOGGLE = KC.NO
+# TB_TOGGLE.before_press_handler(KC.TB_HANDLER(1))
+# TB_TOGGLE.after_press_handler(KC.TB_HANDLER(0))
 
 
 keyboard.keymap = [
@@ -81,8 +95,8 @@ keyboard.keymap = [
     ],
     [  #LOWER
         KC.ESC,   KC.N1,   KC.N2,   KC.N3,   KC.N4,   KC.N5,                         KC.N6,   KC.N7,  KC.N8,   KC.N9,   KC.N0, KC.BSPC,\
-        KC.LCTL, XXXXXXX, XXXXXXX, XXXXXXX,  KC.DEL, KC.INSERT,                      KC.LEFT, KC.DOWN, KC.UP,   KC.RIGHT, XXXXXXX, XXXXXXX,\
-        KC.LSFT, XXXXXXX, KC.MB_LMB, KC.MB_RMB, XXXXXXX, XXXXXXX,                    KC.HOME, KC.PGDOWN, KC.PGUP, KC.END, XXXXXXX, XXXXXXX,\
+        KC.LCTL, XXXXXXX, XXXXXXX,  KC.APP,  KC.DEL, KC.INSERT,                      KC.LEFT, KC.DOWN, KC.UP,   KC.RIGHT, XXXXXXX, XXXXXXX,\
+        KC.LSFT, XXXXXXX, KC.MB_RMB, KC.MB_LMB, TB_TOGGLE, CAD,                    KC.HOME, KC.PGDOWN, KC.PGUP, KC.END, XXXXXXX, XXXXXXX,\
                                                 LGUI,   LOWER,  ADJUST,     KC.ENT,   RAISE,  KC.RALT,
     ],
     [  #RAISE
@@ -92,15 +106,21 @@ keyboard.keymap = [
                                                 LGUI,   LOWER,  ADJUST,     KC.ENT,   RAISE,  KC.RALT,
     ],
     [  #COMBO LAYER
-        XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         XXXXXXX, KC.MEDIA_PREV_TRACK, KC.MEDIA_PLAY_PAUSE, KC.MEDIA_NEXT_TRACK, XXXXXXX, XXXXXXX,\
-        XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         KC.AUDIO_MUTE, KC.AUDIO_VOL_DOWN, KC.AUDIO_VOL_UP, XXXXXXX, XXXXXXX, XXXXXXX,\
-        XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         KC.DF(0), KC.DF(4), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,\
+        XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC.F5  ,                         KC.TB_NEXT_HANDLER, KC.MEDIA_PREV_TRACK, KC.MEDIA_PLAY_PAUSE, KC.MEDIA_NEXT_TRACK, XXXXXXX, XXXXXXX,\
+        KC.CAPS, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         KC.AUDIO_MUTE, KC.AUDIO_VOL_DOWN, KC.AUDIO_VOL_UP, XXXXXXX, XXXXXXX, XXXXXXX,\
+        XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         KC.DF(0), KC.DF(4), KC.DF(5), XXXXXXX, XXXXXXX, XXXXXXX,\
                                                 LGUI,   LOWER,  ADJUST,     KC.ENT,   RAISE,  KC.RALT,
     ],
-    [  #GAMING (ESO)
-        KC.TAB,   KC.N1,   KC.N2,   KC.N3,   KC.N4,   KC.N5,                         KC.N6,   KC.N7,  KC.N8,   KC.N9,   KC.N0, KC.BSPC,\
-        KC.LCTL,   KC.Q,   KC.LEFT, KC.UP, KC.RIGHT,   KC.E,                         XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,\
-        KC.LSFT,XXXXXXX, XXXXXXX, KC.DOWN, XXXXXXX, XXXXXXX,                         XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,\
+    [  #GAMING (FPS?)
+        KC.TAB,   KC.Q,   KC.W,    KC.E,   KC.R,   KC.T,                         KC.N6,   KC.N7,  KC.N8,   KC.N9,   KC.N0, KC.BSPC,\
+        KC.LCTL,   KC.LCTL,   KC.LEFT, KC.UP, KC.RIGHT,   KC.G,                         XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,\
+        KC.LSFT,KC.LSFT, XXXXXXX, KC.DOWN, KC.V, KC.B,                         XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,\
+                                                LGUI,   LOWER, ADJUST,     KC.ENT,   RAISE,  KC.RALT,
+    ],
+    [  #GAMING (FPS?)
+        KC.TAB,    KC.TAB,  KC.Q,    KC.W,    KC.E,    KC.R,                             KC.Y,    KC.U,    KC.I,    KC.O,   KC.P,  KC.BSPC,\
+        KC.LCTL,   KC.LCTL, KC.A,    KC.S,    KC.D,    KC.F,                             KC.H,    KC.J,    KC.K,    KC.L, KC.SCLN, KC.QUOT,\
+        KC.LSFT,   KC.LSFT, KC.Z,    KC.X,    KC.C,    KC.V,                             KC.N,    KC.M, KC.COMM,  KC.DOT, KC.SLSH, KC.RSFT,\
                                                 LGUI,   LOWER,  ADJUST,     KC.ENT,   RAISE,  KC.RALT,
     ],
 
@@ -109,5 +129,6 @@ keyboard.keymap = [
 
 if __name__ == '__main__':
      print('starting Piantor KMK')
+     print(os.uname())
      keyboard.go()
 # Write your code here :-)
